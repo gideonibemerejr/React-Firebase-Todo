@@ -6,6 +6,13 @@ import {
   Switch,
   Redirect
 } from 'react-router-dom'
+import { login, logout, auth } from './utils/firebaseService'
+
+const linkStyle = {
+  textDecoration: 'underline',
+  color: 'rebeccapurple',
+  cursor: 'pointer'
+}
 
 /**********************************
  // * Private Routes
@@ -36,19 +43,29 @@ const Home = () => {
   )
 }
 
-const Dashboard = () => {
+const Dashboard = ({ user }) => {
   return (
     <div>
-      <h2>Welcome to your Dashboard</h2>
+      <h2>Welcome to your Dashboard, {user.displayName.split(' ')[0]}</h2>
+      <img
+        src={user.photoURL}
+        alt={user.diisplayName}
+        style={{
+          height: 100,
+          borderRadius: '50%',
+          border: '2px solid black'
+        }}
+      />
     </div>
   )
 }
 
-const Login = () => {
+const Login = ({ authenticated }) => {
+  if (authenticated) return <Redirect to="/dashboard" />
   return (
     <div>
       <h2>You need to be logged in to see this page</h2>
-      <button>Login with Google</button>
+      <button onClick={login}>Login with Google</button>
     </div>
   )
 }
@@ -56,8 +73,20 @@ const Login = () => {
 // * Parent Component
 class App extends Component {
   state = {
-    authenticated: false
+    authenticated: false,
+    user: null
   }
+
+  componentDidMount() {
+    auth.onAuthStateChanged(user => {
+      if (user) {
+        this.setState({ authenticated: true, user })
+      } else {
+        this.setState({ authenticated: false, user: null })
+      }
+    })
+  }
+
   render() {
     return (
       <Router>
@@ -68,15 +97,28 @@ class App extends Component {
           <li>
             <Link to="/dashboard">Dashboard</Link>
           </li>
+          {this.state.authenticated && (
+            <li>
+              <span onClick={logout} style={linkStyle}>
+                Logout
+              </span>
+            </li>
+          )}
         </ul>
         <Switch>
           <Route exact path="/" component={Home} />
           <PrivateRoute
             authenticated={this.state.authenticated}
+            user={this.state.user}
             path="/dashboard"
             component={Dashboard}
           />
-          <Route path="/login" component={Login} />
+          <Route
+            path="/login"
+            render={props => (
+              <Login {...props} authenticated={this.state.authenticated} />
+            )}
+          />
         </Switch>
       </Router>
     )
