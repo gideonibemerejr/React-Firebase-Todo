@@ -6,7 +6,7 @@ import {
   Switch,
   Redirect
 } from 'react-router-dom'
-import { login, logout, auth } from './utils/firebaseService'
+import { login, logout, createTodo, auth } from './utils/firebaseService'
 
 const linkStyle = {
   textDecoration: 'underline',
@@ -43,7 +43,7 @@ const Home = () => {
   )
 }
 
-const Dashboard = ({ user }) => {
+const Dashboard = ({ user, handleSubmit, handleChange, text }) => {
   return (
     <div>
       <h2>Welcome to your Dashboard, {user.displayName.split(' ')[0]}</h2>
@@ -56,6 +56,13 @@ const Dashboard = ({ user }) => {
           border: '2px solid black'
         }}
       />
+      <hr />
+      <h5>Here's your todo Items</h5>
+      <ul>{/* TODO: We will map through our items here  */}</ul>
+      <form onSubmit={handleSubmit}>
+        <input name="text" type="text" value={text} onChange={handleChange} />
+        <button>Add TODO</button>
+      </form>
     </div>
   )
 }
@@ -74,15 +81,37 @@ const Login = ({ authenticated }) => {
 class App extends Component {
   state = {
     authenticated: false,
-    user: null
+    user: null,
+    text: '',
+    dbRef: null
+  }
+
+  /************************
+    # Methods
+  *************************/
+  handleChange = e => {
+    this.setState({ [e.target.name]: e.target.value })
+  }
+
+  handleSubmit = e => {
+    const { dbRef, text } = this.state
+    e.preventDefault()
+    createTodo(dbRef, {
+      text,
+      completed: false
+    }).then(() => this.setState({ text: '' }))
   }
 
   componentDidMount() {
     auth.onAuthStateChanged(user => {
       if (user) {
-        this.setState({ authenticated: true, user })
+        this.setState({
+          authenticated: true,
+          user,
+          dbRef: `users/${user.uid}/todos`
+        })
       } else {
-        this.setState({ authenticated: false, user: null })
+        this.setState({ authenticated: false, user: null, dbRef: null })
       }
     })
   }
@@ -110,6 +139,9 @@ class App extends Component {
           <PrivateRoute
             authenticated={this.state.authenticated}
             user={this.state.user}
+            text={this.state.text}
+            handleChange={this.handleChange}
+            handleSubmit={this.handleSubmit}
             path="/dashboard"
             component={Dashboard}
           />

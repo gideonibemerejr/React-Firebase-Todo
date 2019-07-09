@@ -30,4 +30,8 @@ function logout() {
   return auth.signOut()
 }
 
-export { login, logout, auth }
+function createTodo(ref, todo) {
+  return database.ref(ref).push(todo)
+}
+
+export { login, logout, createTodo, auth }
