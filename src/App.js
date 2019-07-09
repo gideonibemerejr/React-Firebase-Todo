@@ -6,7 +6,13 @@ import {
   Switch,
   Redirect
 } from 'react-router-dom'
-import { login, logout, createTodo, auth } from './utils/firebaseService'
+import {
+  login,
+  logout,
+  createTodo,
+  auth,
+  database
+} from './utils/firebaseService'
 
 const linkStyle = {
   textDecoration: 'underline',
@@ -43,13 +49,13 @@ const Home = () => {
   )
 }
 
-const Dashboard = ({ user, handleSubmit, handleChange, text }) => {
+const Dashboard = ({ user, handleSubmit, handleChange, text, todos }) => {
   return (
     <div>
       <h2>Welcome to your Dashboard, {user.displayName.split(' ')[0]}</h2>
       <img
         src={user.photoURL}
-        alt={user.diisplayName}
+        alt={user.displayName}
         style={{
           height: 100,
           borderRadius: '50%',
@@ -58,7 +64,11 @@ const Dashboard = ({ user, handleSubmit, handleChange, text }) => {
       />
       <hr />
       <h5>Here's your todo Items</h5>
-      <ul>{/* TODO: We will map through our items here  */}</ul>
+      <ul>
+        {todos.map(({ id, text }) => (
+          <li key={id}>{text}</li>
+        ))}
+      </ul>
       <form onSubmit={handleSubmit}>
         <input name="text" type="text" value={text} onChange={handleChange} />
         <button>Add TODO</button>
@@ -83,6 +93,7 @@ class App extends Component {
     authenticated: false,
     user: null,
     text: '',
+    todos: [],
     dbRef: null
   }
 
@@ -102,14 +113,30 @@ class App extends Component {
     }).then(() => this.setState({ text: '' }))
   }
 
+  handlePopulateTodos = () => {
+    database.ref(this.state.dbRef).on('value', snapshot => {
+      const newState = []
+      snapshot.forEach(childSnapshot => {
+        newState.push({
+          id: childSnapshot.key,
+          ...childSnapshot.val()
+        })
+      })
+      this.setState({ todos: newState })
+    })
+  }
+
   componentDidMount() {
     auth.onAuthStateChanged(user => {
       if (user) {
-        this.setState({
-          authenticated: true,
-          user,
-          dbRef: `users/${user.uid}/todos`
-        })
+        this.setState(
+          {
+            authenticated: true,
+            user,
+            dbRef: `users/${user.uid}/todos`
+          },
+          this.handlePopulateTodos
+        )
       } else {
         this.setState({ authenticated: false, user: null, dbRef: null })
       }
@@ -140,6 +167,7 @@ class App extends Component {
             authenticated={this.state.authenticated}
             user={this.state.user}
             text={this.state.text}
+            todos={this.state.todos}
             handleChange={this.handleChange}
             handleSubmit={this.handleSubmit}
             path="/dashboard"

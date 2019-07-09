@@ -34,4 +34,4 @@ function createTodo(ref, todo) {
   return database.ref(ref).push(todo)
 }
 
-export { login, logout, createTodo, auth }
+export { login, logout, createTodo, auth, database }
