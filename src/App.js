@@ -8,6 +8,23 @@ import {
 } from 'react-router-dom'
 
 /**********************************
+ // * Private Routes
+ **********************************/
+
+const PrivateRoute = ({ authenticated, component: Component, ...rest }) => {
+  return (
+    <Route
+      render={props =>
+        authenticated ? (
+          <Component {...rest} {...props} />
+        ) : (
+          <Redirect to="/login" />
+        )
+      }
+    />
+  )
+}
+/**********************************
  // * Components
  **********************************/
 
@@ -30,7 +47,7 @@ const Dashboard = () => {
 const Login = () => {
   return (
     <div>
-      <h2>YOu need to be logged in to see this page</h2>
+      <h2>You need to be logged in to see this page</h2>
       <button>Login with Google</button>
     </div>
   )
@@ -38,7 +55,9 @@ const Login = () => {
 
 // * Parent Component
 class App extends Component {
-  state = {}
+  state = {
+    authenticated: false
+  }
   render() {
     return (
       <Router>
@@ -52,7 +71,11 @@ class App extends Component {
         </ul>
         <Switch>
           <Route exact path="/" component={Home} />
-          <Route path="/dashboard" component={Dashboard} />
+          <PrivateRoute
+            authenticated={this.state.authenticated}
+            path="/dashboard"
+            component={Dashboard}
+          />
           <Route path="/login" component={Login} />
         </Switch>
       </Router>
